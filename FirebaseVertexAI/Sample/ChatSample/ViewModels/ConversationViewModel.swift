@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import FirebaseVertexAI
+import FirebaseRemoteConfig
 import Foundation
 import UIKit
 
@@ -35,18 +36,28 @@ class ConversationViewModel: ObservableObject {
 
   private var chatTask: Task<Void, Never>?
 
+  private let remoteConfig = RemoteConfig.remoteConfig()
+
   init() {
-    model = VertexAI.vertexAI().generativeModel(modelName: "gemini-1.5-flash")
-    chat = model.startChat()
+      let modelName = remoteConfig.configValue(forKey: "model_name").stringValue ?? "gemini-1.5-flash"
+      model = VertexAI.vertexAI().generativeModel(modelName: modelName)
+      chat = model.startChat()
   }
 
   func sendMessage(_ text: String, streaming: Bool = true) async {
-    error = nil
-    if streaming {
-      await internalSendMessageStreaming(text)
-    } else {
-      await internalSendMessage(text)
-    }
+      error = nil
+      let preamble = remoteConfig.configValue(forKey: "chat_preamble").stringValue ?? ""
+      let fullMessage = preamble.isEmpty ? text : preamble + "\n" + text
+
+      // Add only the user's visible message to the chat history.
+      let userMessage = ChatMessage(message: text, participant: .user)
+      messages.append(userMessage)
+        
+      if streaming {
+          await internalSendMessageStreaming(fullMessage)
+      } else {
+          await internalSendMessage(fullMessage)
+      }
   }
 
   func startNewChat() {
@@ -69,10 +80,6 @@ class ConversationViewModel: ObservableObject {
       defer {
         busy = false
       }
-
-      // first, add the user's message to the chat
-      let userMessage = ChatMessage(message: text, participant: .user)
-      messages.append(userMessage)
 
       // add a pending message while we're waiting for a response from the backend
       let systemMessage = ChatMessage.pending(participant: .system)
@@ -102,10 +109,6 @@ class ConversationViewModel: ObservableObject {
       defer {
         busy = false
       }
-
-      // first, add the user's message to the chat
-      let userMessage = ChatMessage(message: text, participant: .user)
-      messages.append(userMessage)
 
       // add a pending message while we're waiting for a response from the backend
       let systemMessage = ChatMessage.pending(participant: .system)

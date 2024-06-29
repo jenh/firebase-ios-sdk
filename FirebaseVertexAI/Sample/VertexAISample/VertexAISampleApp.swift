@@ -14,17 +14,20 @@
 
 import FirebaseAppCheck
 import FirebaseCore
+import FirebaseRemoteConfig
 import SwiftUI
 
 class AppDelegate: NSObject, UIApplicationDelegate {
+
   func application(_ application: UIApplication,
-                   didFinishLaunchingWithOptions launchOptions: [UIApplication
-                     .LaunchOptionsKey: Any]? = nil) -> Bool {
+    didFinishLaunchingWithOptions launchOptions: [UIApplication
+      .LaunchOptionsKey: Any]? = nil) -> Bool {
+
+    FirebaseApp.configure()
+
     // Recommendation: Protect your Vertex AI API resources from abuse by preventing unauthorized
     // clients using App Check; see https://firebase.google.com/docs/app-check#get_started.
     AppCheck.setAppCheckProviderFactory(AppCheckNotConfiguredFactory())
-
-    FirebaseApp.configure()
 
     if let firebaseApp = FirebaseApp.app(), firebaseApp.options.projectID == "mockproject-1234" {
       guard let bundleID = Bundle.main.bundleIdentifier else { fatalError() }
@@ -35,6 +38,24 @@ class AppDelegate: NSObject, UIApplicationDelegate {
       """)
     }
 
+    // Now that Firebase is configured, set up Remote Config
+    let remoteConfig = RemoteConfig.remoteConfig()
+    let settings = RemoteConfigSettings()
+    settings.minimumFetchInterval = 0 // For development only.
+    remoteConfig.configSettings = settings
+
+    // Set default values
+    remoteConfig.setDefaults([
+      "model_name": "gemini-1.5-flash" as NSObject,
+      "chat_preamble": "" as NSObject
+    ])
+                          
+    // Fetch and activate Remote Config values
+    remoteConfig.fetchAndActivate { status, error in
+      if let error = error {
+        print("Error fetching remote config: \(error.localizedDescription)")
+      }
+    }
     return true
   }
 }
