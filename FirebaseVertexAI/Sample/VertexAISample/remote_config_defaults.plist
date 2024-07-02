@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>chat_preamble</key>
+  <string>I'm a developer who wants to learn about Firebase and you are a helpful assistant who knows everything there is to know about Firebase!</string>
+  <key>model_name</key>
+  <string>gemini-1.5-flash</string>
+</dict>
+</plist>

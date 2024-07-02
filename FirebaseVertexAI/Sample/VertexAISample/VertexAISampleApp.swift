@@ -44,16 +44,30 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     settings.minimumFetchInterval = 0 // For development only.
     remoteConfig.configSettings = settings
 
-    // Set default values
-    remoteConfig.setDefaults([
-      "model_name": "gemini-1.5-flash" as NSObject,
-      "chat_preamble": "" as NSObject
-    ])
-                          
+    // Set defaults from remote_config_defaults.plist
+    remoteConfig.setDefaults(fromPlist: "remote_config_defaults")
+
     // Fetch and activate Remote Config values
     remoteConfig.fetchAndActivate { status, error in
       if let error = error {
         print("Error fetching remote config: \(error.localizedDescription)")
+      }
+    }
+
+    // Add real-time Remote Config
+    remoteConfig.addOnConfigUpdateListener { configUpdate, error in
+      guard let configUpdate = configUpdate, error == nil else {
+        print("Error listening for config updates: \(error?.localizedDescription ?? "No error available")")
+        return
+      }
+
+      print("Updated keys: \(configUpdate.updatedKeys)")
+      remoteConfig.activate { changed, error in
+        guard error == nil else {
+          print("Error activating config: \(error?.localizedDescription ?? "No error available")")
+          return
+        }
+        print("Activated config successfully")
       }
     }
     return true
